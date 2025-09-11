@@ -106,3 +106,32 @@ Uploaded C:\\Users\\----\\--------\\Desktop\\GitHub\\week1-aws-s3-static\\index0
 
 \- Be cautious of public access and billing.
 
+
+#### Day2:
+
+
+
+create .infra/ 
+
+infra/
+
+├── s3-uploader-policy.json              # least-privilege policy (object + list)
+
+├── trust-lambda.json                    # trust policy for Lambda role
+
+├── create\_policy.sh                     # helper script to create policy \& return ARN
+
+├── cloudformation/
+
+│   └── s3-and-iam.yml                   # CloudFormation template to create S3 + policy + role
+
+├── iam-setup-template.md                # filled template you should update with outputs
+
+├── tests/
+
+│   └── test\_s3\_upload.py                # pytest using moto to validate uploader script
+
+└── workflows/
+
+&nbsp;   └── ci.yml                           # GitHub Actions workflow to run tests
+
