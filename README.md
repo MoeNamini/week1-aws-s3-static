@@ -107,11 +107,12 @@ Uploaded C:\\Users\\----\\--------\\Desktop\\GitHub\\week1-aws-s3-static\\index0
 \- Be cautious of public access and billing.
 
 
+
 #### Day2:
 
 
 
-create .infra/ 
+create .infra/
 
 infra/
 
@@ -133,5 +134,17 @@ infra/
 
 └── workflows/
 
-&nbsp;   └── ci.yml                           # GitHub Actions workflow to run tests
+    └── ci.yml                           # GitHub Actions workflow to run tests
+
+Created the "infra" repo in GitHub. 
+
+-pulled the changes from GitHub repo: git pull infra main --allow-unrelated-histories
+-pushed the files from local repo: git push --set-upstream infra main
+
+
+
+Set notepad as global text editor instead of vim: git config --global core.editor "notepad.exe"
+
+
+Created a s3 policy uploader script which create the policy saved as a .json file in AWS and save the policy's ARN into a template that include all ARNs, with one CLI command "./create\_policy.sh MyNewPolicy infra/new-policy.json"
 
