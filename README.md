@@ -148,6 +148,8 @@ created iam user access ket, set it as local profile, delete the old access key
 
 Created a s3 policy uploader script which create the policy saved as a .json file in AWS and save the policy's ARN into a template that include all ARNs, with one CLI command "./create\_policy.sh MyNewPolicy infra/new-policy.json"
 
+this is test01
+testing merge conflict 
 
 
 create role and attach policy 
@@ -255,3 +257,4 @@ Created new branches
 
 this is test02
 testing merge conflict
+This line is added in VS Code editor 
