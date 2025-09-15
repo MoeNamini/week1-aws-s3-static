@@ -4,10 +4,6 @@ First Repo in FitHub
 
 
 
-## \# Week1: S3 Static Site Demo
-
-
-
 ### \## What I built
 
 
@@ -136,7 +132,7 @@ infra/
 
     └── ci.yml                           # GitHub Actions workflow to run tests
 
-Created the "infra" repo in GitHub. 
+Created the "infra" repo in GitHub.
 
 -pulled the changes from GitHub repo: git pull infra main --allow-unrelated-histories
 -pushed the files from local repo: git push --set-upstream infra main
@@ -145,8 +141,120 @@ Created the "infra" repo in GitHub.
 
 Set notepad as global text editor instead of vim: git config --global core.editor "notepad.exe"
 
+group leastprivilage and user fortest created, policy attached to group
+created iam user access ket, set it as local profile, delete the old access key
+
+
 
 Created a s3 policy uploader script which create the policy saved as a .json file in AWS and save the policy's ARN into a template that include all ARNs, with one CLI command "./create\_policy.sh MyNewPolicy infra/new-policy.json"
 
 this is test01
 testing merge conflict 
+
+
+create role and attach policy 
+aws iam create-role --role-name lambda-s3-LLP-role --assume-role-policy-document file://infra/trust-lambda.json
+
+
+
+aws iam attach-role-policy --role-name lambda-s3-LLP-role --policy-arn arn:aws:iam::\*\*\*\*\*\*\*\*
+
+
+
+aws iam attach-role-policy --role-name lambda-s3-LLP-role --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+
+
+created a couldformation for automated lambda role/s3 bucket creation
+
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: S3 bucket + least-privilege policy + lambda role
+
+
+
+Resources:
+
+&nbsp; StaticBucket:
+
+&nbsp;   Type: AWS::S3::Bucket
+
+&nbsp;   Properties:
+
+&nbsp;     BucketName: hybrid-yourname-static-01
+
+&nbsp;     WebsiteConfiguration:
+
+&nbsp;       IndexDocument: index.html
+
+
+
+&nbsp; S3UploaderPolicy:
+
+&nbsp;   Type: AWS::IAM::ManagedPolicy
+
+&nbsp;   Properties:
+
+&nbsp;     # This line is removed. CloudFormation will generate a name.
+
+&nbsp;     PolicyDocument:
+
+&nbsp;       Version: '2012-10-17'
+
+&nbsp;       Statement:
+
+&nbsp;         - Sid: AllowListBucket
+
+&nbsp;           Effect: Allow
+
+&nbsp;           Action: s3:ListBucket
+
+&nbsp;           Resource: !Sub arn:aws:s3:::${StaticBucket}
+
+&nbsp;         - Sid: AllowObjectActions
+
+&nbsp;           Effect: Allow
+
+&nbsp;           Action:
+
+&nbsp;             - s3:GetObject
+
+&nbsp;             - s3:PutObject
+
+&nbsp;           Resource: !Sub arn:aws:s3:::${StaticBucket}/\*
+
+
+
+&nbsp; LambdaAssumeRole:
+
+&nbsp;   Type: AWS::IAM::Role
+
+&nbsp;   Properties:
+
+&nbsp;     # This line is removed. CloudFormation will generate a name.
+
+&nbsp;     AssumeRolePolicyDocument:
+
+&nbsp;       Version: "2012-10-17"
+
+&nbsp;       Statement:
+
+&nbsp;         - Effect: Allow
+
+&nbsp;           Principal: { Service: lambda.amazonaws.com }
+
+&nbsp;           Action: sts:AssumeRole
+
+&nbsp;     ManagedPolicyArns:
+
+&nbsp;       - !Ref S3UploaderPolicy
+
+&nbsp;       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+
+
+Created new branches 
+
+this is test02
+testing merge conflict
+This line is added in VS Code editor 
