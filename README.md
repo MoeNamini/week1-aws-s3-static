@@ -148,6 +148,8 @@ created iam user access ket, set it as local profile, delete the old access key
 
 Created a s3 policy uploader script which create the policy saved as a .json file in AWS and save the policy's ARN into a template that include all ARNs, with one CLI command "./create\_policy.sh MyNewPolicy infra/new-policy.json"
 
+this is test01
+testing merge conflict 
 
 
 create role and attach policy 
@@ -173,81 +175,81 @@ Description: S3 bucket + least-privilege policy + lambda role
 
 Resources:
 
-&nbsp; StaticBucket:
+ StaticBucket:
 
-&nbsp;   Type: AWS::S3::Bucket
+   Type: AWS::S3::Bucket
 
-&nbsp;   Properties:
+   Properties:
 
-&nbsp;     BucketName: hybrid-yourname-static-01
+     BucketName: hybrid-yourname-static-01
 
-&nbsp;     WebsiteConfiguration:
+     WebsiteConfiguration:
 
-&nbsp;       IndexDocument: index.html
-
-
-
-&nbsp; S3UploaderPolicy:
-
-&nbsp;   Type: AWS::IAM::ManagedPolicy
-
-&nbsp;   Properties:
-
-&nbsp;     # This line is removed. CloudFormation will generate a name.
-
-&nbsp;     PolicyDocument:
-
-&nbsp;       Version: '2012-10-17'
-
-&nbsp;       Statement:
-
-&nbsp;         - Sid: AllowListBucket
-
-&nbsp;           Effect: Allow
-
-&nbsp;           Action: s3:ListBucket
-
-&nbsp;           Resource: !Sub arn:aws:s3:::${StaticBucket}
-
-&nbsp;         - Sid: AllowObjectActions
-
-&nbsp;           Effect: Allow
-
-&nbsp;           Action:
-
-&nbsp;             - s3:GetObject
-
-&nbsp;             - s3:PutObject
-
-&nbsp;           Resource: !Sub arn:aws:s3:::${StaticBucket}/\*
+       IndexDocument: index.html
 
 
 
-&nbsp; LambdaAssumeRole:
+ S3UploaderPolicy:
 
-&nbsp;   Type: AWS::IAM::Role
+   Type: AWS::IAM::ManagedPolicy
 
-&nbsp;   Properties:
+   Properties:
 
-&nbsp;     # This line is removed. CloudFormation will generate a name.
+     # This line is removed. CloudFormation will generate a name.
 
-&nbsp;     AssumeRolePolicyDocument:
+     PolicyDocument:
 
-&nbsp;       Version: "2012-10-17"
+       Version: '2012-10-17'
 
-&nbsp;       Statement:
+       Statement:
 
-&nbsp;         - Effect: Allow
+         - Sid: AllowListBucket
 
-&nbsp;           Principal: { Service: lambda.amazonaws.com }
+           Effect: Allow
 
-&nbsp;           Action: sts:AssumeRole
+           Action: s3:ListBucket
 
-&nbsp;     ManagedPolicyArns:
+           Resource: !Sub arn:aws:s3:::${StaticBucket}
 
-&nbsp;       - !Ref S3UploaderPolicy
+         - Sid: AllowObjectActions
 
-&nbsp;       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+           Effect: Allow
+
+           Action:
+
+             - s3:GetObject
+
+             - s3:PutObject
+
+           Resource: !Sub arn:aws:s3:::${StaticBucket}/\*
+
+
+
+ LambdaAssumeRole:
+
+   Type: AWS::IAM::Role
+
+   Properties:
+
+     # This line is removed. CloudFormation will generate a name.
+
+     AssumeRolePolicyDocument:
+
+       Version: "2012-10-17"
+
+       Statement:
+
+         - Effect: Allow
+
+           Principal: { Service: lambda.amazonaws.com }
+
+           Action: sts:AssumeRole
+
+     ManagedPolicyArns:
+
+       - !Ref S3UploaderPolicy
+
+       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
 
 
@@ -255,3 +257,7 @@ Created new branches
 
 this is test02
 testing merge conflict
+This line is added in VS Code editor 
+
+Practicing git reset-soft-hard
+This is line 1
