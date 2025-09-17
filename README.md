@@ -276,3 +276,6 @@ Practicing git stash
 //code
 //code - in working directory
 resolved the conflict and saved 
+
+Automate test of your uploader without hitting AWS live (fast feedback). Using Pytest and moto 
+Add GitHub Actions to run tests - push and pull-request as triggers 
