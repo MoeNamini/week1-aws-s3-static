@@ -268,3 +268,4 @@ This is line 5
 This is line 6
 This us line 7
 This is line 8 - revert
+This is line 9
