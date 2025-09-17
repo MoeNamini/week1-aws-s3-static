@@ -269,3 +269,9 @@ This is line 6
 <<<<<<< HEAD
 This us line 7
 This is line 8 - revert
+
+practicing stash 
+working on another task
+//code02
+//code02
+//code02
