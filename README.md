@@ -1,281 +1,503 @@
-# week1-aws-s3-static
+---
+type: Page
+title: README
+description: null
+icon: null
+createdAt: '2025-09-22T17:12:36.793Z'
+creationDate: 2025-09-22 20:42
+modificationDate: 2025-09-22 22:57
+tags: [4MonthPlan, CareerDevelopment, workflow]
+coverImage: null
+---
 
-First Repo in FitHub
+Of course. This version is designed to be a complete and detailed README for your GitHub repository. It incorporates all the files, commands, ARNs, and development notes you provided, structured to showcase your entire project lifecycle from a simple script to a fully automated and secure system.
+
+---
+
+# Secure AWS S3 Static Site with CI/CD & Automation
+
+[https://github.com/MoeNamini/infra/actions/workflows/ci.yml](https://github.com/MoeNamini/infra/actions/workflows/ci.yml)
+
+This repository documents the process of building a secure, automated infrastructure for hosting a static website on AWS S3. The project evolved from a basic manual setup to a robust solution using Infrastructure as Code (IaC), a full CI/CD pipeline with automated testing, and security best practices like least-privilege IAM policies, S3 bucket hardening, and secure access patterns.
+
+## Table of Contents
+
+### ## Key Workflows & Accomplishments
+
+- **IAM Security:** Designed and implemented a least-privilege IAM policy, user, and group structure.
+
+- **Infrastructure as Code (IaC):** Automated the creation of S3, IAM Policies, and IAM Roles using AWS CloudFormation.
+
+- **Python Scripting:** Developed an importable S3 uploader function with a command-line interface using `boto3`.
+
+- **Automated Testing:** Wrote unit tests using **Pytest** and the **Moto** library to mock AWS services for fast, local feedback.
+
+- **Continuous Integration (CI/CD):** Configured a **GitHub Actions** workflow to run tests automatically on every `push` and `pull request`.
+
+- **Local Development Automation:** Implemented a `pre-push` **Git hook** to run tests locally before code is pushed, ensuring no broken code reaches the repository.
+
+- **Security Hardening:** Enabled Server-Side Encryption (SSE) and object versioning on the S3 bucket.
+
+- **Secure Access:** Utilized S3 Pre-signed URLs for time-limited, secure access to private objects.
+
+- **Policy Validation:** Used the AWS IAM Policy Simulator to verify permissions programmatically.
+
+---
+
+### ## Project Files Created
+
+- **Application & Scripts:**
+
+    - `script.py`: The core S3 uploader script. 
+
+    - `create_policy.sh`: Helper script to create an IAM policy and return its ARN.
+
+- **Infrastructure & Configuration (**`infra/`**):**
+
+    - `s3-uploader-policy.json`: The least-privilege IAM policy document.
+
+    - `leastprivilages3-policy.json`: An alternative version of the policy.
+
+    - `trust-lambda.json`: The trust policy for the Lambda IAM Role.
+
+    - `cloudformation/s3-and-iam.yml`: The CloudFormation template for provisioning all AWS resources.
+
+- **Testing & CI/CD:**
+
+    - `tests/test_s3_upload.py`: Pytest unit tests using the Moto library.
+
+    - `tests/conftest.py`: Pytest configuration file.
+
+    - `.github/workflows/ci.yml`: The GitHub Actions workflow definition.
+
+    - `.git/hooks/pre-push`: Local Git hook to automate testing before pushes.
+
+    - `.git/hooks/post-merge`: Local Git hook to automate testing after PR.
+
+- **Artifacts & Documentation:**
+
+    - `requirements.txt`: Python package dependencies.
+
+    - `artifacts/reports.txt`: Append-only, human-readable test history.
+
+    - `artifacts/pytest_full.txt`: Detailed test output for debugging.
+
+    - `artifacts/junit.xml`: Test results formatted for CI/CD tool integration.
+
+    <The scripts files are coded with AI **assistance**>
+
+---
+
+## Part 1: Initial Setup - Static Site & Uploader Script
+
+The project began by creating a simple S3 bucket to host a static HTML file and a Python script to upload files to it.
+
+- **Hosted Site URL:** [https://hybrid-moenamini02-static-01.s3.eu-central-1.amazonaws.com/index.html](https://hybrid-moenamini02-static-01.s3.eu-central-1.amazonaws.com/index.html)
 
 
 
-### \## What I built
 
+#### S3 Uploader Script (`script.py`)
 
+This `boto3` script provides a CLI to upload files to a specified S3 bucket.
 
-#### Day1:
-
-Static site hosted on S3, plus a Python uploader script.
-
-https://hybrid-moenamini02-static-01.s3.eu-central-1.amazonaws.com/index.html
-
-
-
-\## How to run locally
-
-Commands used:
-
-\# script.py — simple S3 uploader using boto3
-
-
-
-""
-
-import os
-
+```python
+# script.py
 import argparse
-
+from pathlib import Path
 import boto3
+from typing import Optional, Union
 
-from botocore.exceptions import ClientError
+def s3_client(region_name: Optional[str] = None, endpoint_url: Optional[str] = None):
+    kwargs = {}
+    if region_name:
+        kwargs["region_name"] = region_name
+    if endpoint_url:
+        kwargs["endpoint_url"] = endpoint_url
+    return boto3.client("s3", **kwargs)
 
+def upload_file(path: Union[str, Path], bucket: str, key: str,
+                region: Optional[str] = None, endpoint_url: Optional[str] = None) -> bool:
+    """
+    Uploads a local file to S3 using boto3 client.
+    Returns True on success, raises exception on failure.
+    """
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"{path} does not exist")
 
+    client = s3_client(region_name=region, endpoint_url=endpoint_url)
 
-def upload\_file(file\_path, bucket, object\_name=None):
+    # Read bytes and put object (works for tests with moto)
+    with path.open("rb") as f:
+        client.put_object(Bucket=bucket, Key=key, Body=f.read())
 
-    if object\_name is None:
+    return True
 
-        object\_name = os.path.basename(file\_path)
+def main():
+    parser = argparse.ArgumentParser(description="Upload a file to S3")
+    parser.add_argument("--file", required=True, help="Local path to file")
+    parser.add_argument("--bucket", required=True, help="S3 bucket name")
+    parser.add_argument("--key", required=True, help="S3 object key")
+    parser.add_argument("--region", default=None, help="AWS region (optional)")
+    parser.add_argument("--endpoint-url", default=None, help="S3 endpoint (for testing)")
 
-    s3\_client = boto3.client('s3')
+    args = parser.parse_args()
+    upload_file(args.file, args.bucket, args.key, region=args.region, endpoint_url=args.endpoint_url)
 
-    try:
+if __name__ == "__main__":
+    main()
+```
 
-        s3\_client.upload\_file(file\_path, bucket, object\_name)
+#### Example Usage & Output
 
-        print(f"Uploaded {file\_path} to s3://{bucket}/{object\_name}")
+```bash
+py script.py --file "/path/to/your/index01.html" --bucket hybrid-moenamini02-static-01 --key "index01.html"
 
-    except ClientError as e:
+# Output:
+# Uploaded /path/to/your/index01.html to s3://hybrid-moenamini02-static-01/index01.html
+```
 
-        print(f"Error: {e}")
+---
 
-        return False
+## Part 2: Security & IaC - IAM, Roles, and CloudFormation
 
-    return True
+The initial manual setup was evolved into a secure and automated system using IAM best practices and Infrastructure as Code.
 
+### ## IAM Least-Privilege Configuration
 
+A user, group, and policy were created to grant minimal necessary permissions for S3 operations.
 
-if \_\_name\_\_ == "\_\_main\_\_":
+- **Policy ARN:** `arn:aws:iam::<ACCOUNT_ID>:policy/HybridS3UploaderPolicy`
 
-    parser = argparse.ArgumentParser(description="Upload file to S3")
+- **Group ARN:** `arn:aws:iam::<ACCOUNT_ID>:group/leastprivilage`
 
-    parser.add\_argument("--file", required=True, help="Path to file to upload")
+- **User ARN:** `arn:aws:iam::<ACCOUNT_ID>:user/fortest`
 
-    parser.add\_argument("--bucket", required=True, help="S3 bucket name")
+- **Role ARN:** `arn:aws:iam::<ACCOUNT_ID>:role/lambda-s3-LPP-role`
 
-    parser.add\_argument("--key", required=False, help="S3 object key (optional)")
+#### Implementation Commands
 
-    args = parser.parse\_args()
+```bash
+# Create the policy from a JSON file
+aws iam create-policy --policy-name HybridS3UploaderPolicy --policy-document file://infra/s3-uploader-policy.json
 
-    upload\_file(args.file, args.bucket, args.key)
+# Create the group and attach the policy
+aws iam create-group --group-name s3-uploaders
+aws iam attach-group-policy \
+  --group-name s3-uploaders \
+  --policy-arn arn:aws:iam::<ACCOUNT_ID>:policy/HybridS3UploaderPolicy
 
-""
+# Create a user and add them to the group
+aws iam create-user --user-name fortest
+aws iam add-user-to-group --user-name fortest --group-name s3-uploaders
+```
 
+#### Created automated create_policy.sh scripts for better workflow and consistency
 
+```bash
+#!/usr/bin/env bash
+set -e
 
-""
+# Use provided arguments or default values
+POLICY_NAME=${1:-HybridS3UploaderPolicy}
+POLICY_FILE=${2:-infra/new-policy.json}
 
-(.venv) PS C:\\Users\\----\\PycharmProjects\\PythonProject1\\.venv> py script.py --file "C:\\Users\\moham\\OneDrive\\Desktop\\GitHub\\week1-aws-s3-static\\index01.html" --bucket hybrid-moenamini02-static-01 --key "index01.html"
+# Create the policy and capture the ARN into a script variable
+POLICY_ARN=$(aws iam create-policy --policy-name "$POLICY_NAME" --policy-document file://"$POLICY_FILE" \
+  | jq -r '.Policy.Arn')
 
-Uploaded C:\\Users\\----\\--------\\Desktop\\GitHub\\week1-aws-s3-static\\index01.html to s3://hybrid-moenamini02-static-01/index01.html
+# Check if the ARN was captured successfully
+if [[ -z "$POLICY_ARN" ]]; then
+    echo "Error: Could not capture Policy ARN. Check previous command output." >&2
+    exit 1
+fi
 
-""
+# Print the result to the screen for confirmation
+echo "✅ Policy ARN created: $POLICY_ARN"
 
+# Append the ARN to the markdown file
+echo "Policy ARN: $POLICY_ARN" >> iam-setup-template.md
+```
 
 
 
+### ##  Infrastructure as Code (IaC) with CloudFormation
 
-\## AWS resources created
+The entire infrastructure (S3 bucket, IAM policy, IAM role) was codified in a CloudFormation template for repeatable, automated deployments.
 
-\- S3 bucket: hybrid-moenamini02-static-01
+#### CloudFormation Template (`infra/cloudformation/s3-and-iam.yml`)
 
-\- IAM user: dev-moenamini (programmatic)
-
-
-
-\## Notes
-
-\- Be cautious of public access and billing.
-
-
-
-#### Day2:
-
-
-
-create .infra/
-
-infra/
-
-├── s3-uploader-policy.json              # least-privilege policy (object + list)
-
-├── trust-lambda.json                    # trust policy for Lambda role
-
-├── create\_policy.sh                     # helper script to create policy \& return ARN
-
-├── cloudformation/
-
-│   └── s3-and-iam.yml                   # CloudFormation template to create S3 + policy + role
-
-├── iam-setup-template.md                # filled template you should update with outputs
-
-├── tests/
-
-│   └── test\_s3\_upload.py                # pytest using moto to validate uploader script
-
-└── workflows/
-
-    └── ci.yml                           # GitHub Actions workflow to run tests
-
-Created the "infra" repo in GitHub.
-
--pulled the changes from GitHub repo: git pull infra main --allow-unrelated-histories
--pushed the files from local repo: git push --set-upstream infra main
-
-
-
-Set notepad as global text editor instead of vim: git config --global core.editor "notepad.exe"
-
-group leastprivilage and user fortest created, policy attached to group
-created iam user access ket, set it as local profile, delete the old access key
-
-
-
-Created a s3 policy uploader script which create the policy saved as a .json file in AWS and save the policy's ARN into a template that include all ARNs, with one CLI command "./create\_policy.sh MyNewPolicy infra/new-policy.json"
-
-this is test01
-testing merge conflict 
-
-
-create role and attach policy 
-aws iam create-role --role-name lambda-s3-LLP-role --assume-role-policy-document file://infra/trust-lambda.json
-
-
-
-aws iam attach-role-policy --role-name lambda-s3-LLP-role --policy-arn arn:aws:iam::\*\*\*\*\*\*\*\*
-
-
-
-aws iam attach-role-policy --role-name lambda-s3-LLP-role --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
-
-
-created a couldformation for automated lambda role/s3 bucket creation
-
+```yaml
 AWSTemplateFormatVersion: '2010-09-09'
-
 Description: S3 bucket + least-privilege policy + lambda role
 
-
-
 Resources:
+  StaticBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: hybrid-yourname-static-01
+      WebsiteConfiguration:
+        IndexDocument: index.html
 
- StaticBucket:
+  S3UploaderPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      # This line is removed. CloudFormation will generate a name.
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowListBucket
+            Effect: Allow
+            Action: s3:ListBucket
+            Resource: !Sub arn:aws:s3:::${StaticBucket}
+          - Sid: AllowObjectActions
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+            Resource: !Sub arn:aws:s3:::${StaticBucket}/*
 
-   Type: AWS::S3::Bucket
+  LambdaAssumeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      # This line is removed. CloudFormation will generate a name.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref S3UploaderPolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+```
 
-   Properties:
+#### Deployment Command
 
-     BucketName: hybrid-yourname-static-01
+```bash
+aws cloudformation deploy \
+  --template-file infra/cloudformation/s3-iam.yml \
+  --stack-name hybrid-s3-iam \
+  --capabilities CAPABILITY_IAM
+```
 
-     WebsiteConfiguration:
+---
 
-       IndexDocument: index.html
+##  Part 3: Automation & CI/CD
 
+To ensure code quality and reliability, a complete testing and integration pipeline was established, automating validation both locally and in the cloud.
 
+### ##  Local Testing Automation 
 
- S3UploaderPolicy:
+A `pre-push` hook was created to automatically run the Pytest suite before any code is pushed to the remote repository. This provides immediate feedback and prevents broken code from being committed. The script generates three distinct report artifacts:
 
-   Type: AWS::IAM::ManagedPolicy
+- `reports.txt`: An append-only, human-readable log of test runs with timestamps.
 
-   Properties:
+- `pytest_full.txt`: A detailed report with full output for debugging failures.
 
-     # This line is removed. CloudFormation will generate a name.
+- `junit.xml`: A standardized XML report for easy integration with CI/CD platforms like GitHub Actions.
 
-     PolicyDocument:
+    ```python
+    # conftest.py
+    import pytest
+    import datetime
+    from pathlib import Path
+    
+    REPORTS_DIR = Path("artifacts")
+    REPORTS_FILE = REPORTS_DIR / "reports.txt"
+    
+    def pytest_runtest_logreport(report):
+        """Hook to log results after each test phase."""
+        if report.when == "call":  # only log test execution phase (not setup/teardown)
+            REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    
+            test_name = report.nodeid  # includes test name + path
+            test_dir = Path(report.fspath).parent
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+            if report.passed:
+                outcome = "PASS"
+                message = ""
+            else:
+                outcome = "FAIL"
+                message = str(report.longrepr)
+    
+            log_line = f"[{timestamp}] {test_name} | Dir: {test_dir} | {outcome} {message}\n"
+    
+            with open(REPORTS_FILE, "a", encoding="utf-8") as f:
+                f.write(log_line)
+    ```
 
-       Version: '2012-10-17'
+This Pytest configuration file uses the pytest_runtest_logreport hook to automatically generate a custom, human-readable log entry in artifacts/reports.txt after every test run. This provides a clear and persistent audit trail of all test outcomes.
 
-       Statement:
+### ##  Continuous Integration with GitHub Actions (Git `pre-push` Hook)
 
-         - Sid: AllowListBucket
+The `.github/workflows/ci.yml` file configures a GitHub Actions workflow that automatically triggers the full test suite on every `push` and `pull_request` to the `main` branch, ensuring continuous validation.
 
-           Effect: Allow
+```yaml
+name: CI
 
-           Action: s3:ListBucket
+# Triggers: run on pushes and pull requests to any branch
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
 
-           Resource: !Sub arn:aws:s3:::${StaticBucket}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-         - Sid: AllowObjectActions
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-           Effect: Allow
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
 
-           Action:
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-             - s3:GetObject
+      - name: Run tests
+        run: pytest -q
 
-             - s3:PutObject
+      # optional: upload test logs as artifact (uncomment if you want)
+      - name: Upload test logs
+        uses: actions/upload-artifact@v4
+         with:
+           name: pytest-report
+           path: artifacts/reports.txt
+```
 
-           Resource: !Sub arn:aws:s3:::${StaticBucket}/\*
+###  ## Unit Testing Implementation Details
 
+The core of the automation relies on Pytest and the Moto library to simulate AWS services for fast and reliable testing.
 
+Unit Test for S3 Upload (infra/tests/test_s3_upload.py)
+This test validates the upload_file function by using @mock_aws to create a virtual S3 environment. It confirms that a file can be successfully uploaded and that its contents are correct, all without touching the live AWS infrastructure.
 
- LambdaAssumeRole:
+```python
+# infra/tests/test_s3_upload.py
+import boto3
+from moto import mock_aws
+from pathlib import Path
+import pytest
 
-   Type: AWS::IAM::Role
+# import the function from your script (script.py must be at repo root)
+from script import upload_file
 
-   Properties:
+@mock_aws
+def test_upload_file(tmp_path):
+    # choose region for client
+    region = "eu-central-1"
+    s3 = boto3.client("s3", region_name=region)
 
-     # This line is removed. CloudFormation will generate a name.
+    bucket = "test-bucket"
 
-     AssumeRolePolicyDocument:
+    # create bucket; for non-us-east-1, include LocationConstraint
+    if region == "us-east-1":
+        s3.create_bucket(Bucket=bucket)
+    else:
+        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": region})
 
-       Version: "2012-10-17"
+    # prepare a sample file in a temporary directory (pytest tmp_path fixture)
+    p = tmp_path / "test.txt"
+    p.write_text("hello")
 
-       Statement:
+    # call the uploader function directly (in-process so moto intercepts boto3)
+    assert upload_file(str(p), bucket=bucket, key="test.txt", region=region) is True
 
-         - Effect: Allow
+    # validate object exists and content matches
+    obj = s3.get_object(Bucket=bucket, Key="test.txt")
+    content = obj["Body"].read().decode("utf-8")
+    assert content == "hello"
+```
 
-           Principal: { Service: lambda.amazonaws.com }
+---
 
-           Action: sts:AssumeRole
+##  Part 4: Security Hardening & Validation
 
-     ManagedPolicyArns:
+Security was further enhanced by validating policies and enabling protective features on the S3 bucket.
 
-       - !Ref S3UploaderPolicy
+### ##  Policy Validation with IAM Simulator
 
-       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+The IAM Policy Simulator was used to programmatically verify that the IAM user had the correct permissions—and no more.
 
+#### Simulation Command & Result
 
+```bash
+aws iam simulate-principal-policy \
+  --policy-source-arn arn:aws:iam::<ACCOUNT_ID>:user/dev-moe \
+  --action-names s3:PutObject s3:GetObject s3:DeleteObject \
+  --resource-arns arn:aws:s3:::hybrid-moenamini02-static-01/* \
+  --profile admin01
+```
 
-Created new branches 
+```json
+{
+    "EvaluationResults": [
+        {
+            "EvalActionName": "s3:PutObject",
+            "EvalResourceName": "arn:aws:s3:::hybrid-moenamini-static-01/*",
+            "EvalDecision": "allowed",
+            "MatchedStatements": [
+                {
+                    "SourcePolicyId": "leastprivilages3+delObj-policy",
+                    "SourcePolicyType": "IAM Policy",
+                    "StartPosition": { "Line": 9, "Column": 4 },
+                    "EndPosition": { "Line": 19, "Column": 4 }
+                }
+            ]
+        }
+    ]
+}
+```
 
-this is test02
-testing merge conflict
-This line is added in VS Code editor 
+### ##  S3 Bucket Hardening
 
-Practicing git reset-soft-hard
-This is line 1
-This is line 2 
-This is line 3
-This is line 4 - reset 
-This is line 5 
-This is line 6
-<<<<<<< HEAD
-This us line 7
-This is line 8 - revert
+The S3 bucket was hardened by enabling Server-Side Encryption (SSE) and Versioning. This can be done through CLI or AWS console
 
-Practicing git stash 
-//code
-//code 
-//code
-//code - in working directory
-resolved the conflict and saved 
+```bash
+# Enable Server-Side Encryption (SSE-S3) to protect data at rest
+aws s3api put-bucket-encryption --bucket hybrid-moenamini02-static-01 --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
 
-Automate test of your uploader without hitting AWS live (fast feedback). Using Pytest and moto 
-Add GitHub Actions to run tests - push and pull-request as triggers 
+# Enable versioning to protect against accidental deletions and overwrites
+aws s3api put-bucket-versioning --bucket hybrid-moenamini02-static-01 --versioning-configuration Status=Enabled
+```
+
+Also, CloudTrail can be activated for audit processes.
+
+### ##  Secure Access with Pre-signed URLs
+
+Generated a pre-signed URL to grant temporary, secure download access to a private object without exposing credentials.
+
+```bash
+aws s3 presign s3://hybrid-yourname-static-01/file-to-download.txt --expires-in 3600 --profile admin01
+```
+
+---
+
+## Appendix: Project Development Notes
+
+This section contains miscellaneous commands and notes from the development process.
+
+### ## Git Workflow & Commands
+
+- `git pull infra main --allow-unrelated-histories`: Pulled changes from a remote repository with a different history.
+
+- `git push --set-upstream infra main`: Pushed local files to the new remote `infra` repository.
+
+- `git config --global core.editor "notepad.exe"`: Set Notepad as the default Git editor on Windows.
+
+### ## Git Practice & Learning
+
+- `git reset` **(soft/hard/revert):** Practiced rewriting commit history.
+
+- `git stash`**:** Used to save uncommitted changes in the working directory to switch branches.
+
+- **Merge Conflicts:** Encountered and successfully resolved merge conflicts between branches.
