@@ -86,6 +86,17 @@ This repository documents the process of building a secure, automated infrastruc
 
     <The scripts files are coded with AI **assistance**>
 
+
+    # Day 3 — S3 Hardening & Pre-signed PUT URLs (Presign Flow)
+
+## Index / Quick checklist (what must be green)
+1. [ ] `generate_presigned_put.py` generates a presigned PUT URL (optionally with SSE).
+2. [ ] `upload_with_presigned.py` uploads a local file using that URL, sending the SSE header when required.
+3. [ ] Unit tests (`tests/test_presign_unit.py`) pass locally and in CI (mocked boto3).
+4. [ ] Integration test (`tests/integration_test_presign.py`) runs on-demand (manual / gated) and cleans up temporary resources.
+5. [ ] CI workflow (`.github/workflows/ci-presign-test.yml`) runs unit tests on push/PR and uploads artifacts (`test-results.txt`, `artifacts/junit.xml`).
+6. [ ] Documentation (`iam-setup-template.md` / this README) contains real outputs or placeholders replaced with real values for proof.
+
 ---
 
 ## Part 1: Initial Setup - Static Site & Uploader Script
@@ -501,3 +512,48 @@ This section contains miscellaneous commands and notes from the development proc
 - `git stash`**:** Used to save uncommitted changes in the working directory to switch branches.
 
 - **Merge Conflicts:** Encountered and successfully resolved merge conflicts between branches.
+
+
+# Day 3 — S3 Hardening & Pre-signed PUT URLs (Presign Flow)
+
+## Index / Quick checklist (what must be green)
+1. [ ] `generate_presigned_put.py` generates a presigned PUT URL (optionally with SSE).
+2. [ ] `upload_with_presigned.py` uploads a local file using that URL, sending the SSE header when required.
+3. [ ] Unit tests (`tests/test_presign_unit.py`) pass locally and in CI (mocked boto3).
+4. [ ] Integration test (`tests/integration_test_presign.py`) runs on-demand (manual / gated) and cleans up temporary resources.
+5. [ ] CI workflow (`.github/workflows/ci-presign-test.yml`) runs unit tests on push/PR and uploads artifacts (`test-results.txt`, `artifacts/junit.xml`).
+6. [ ] Documentation (`iam-setup-template.md` / this README) contains real outputs or placeholders replaced with real values for proof.
+
+---
+
+## Overview (in plain language)
+This day demonstrates how to let clients upload files directly to S3 **without using credentials** by issuing **presigned PUT URLs** from a server. We included Server-Side Encryption (SSE) enforcement so that uploaded objects are encrypted at rest (AES256 or KMS), and we show how to test the flow:
+
+- **Unit tests**: fast, deterministic tests that mock `boto3` and verify that the presign generator is called with the correct parameters (including SSE when requested).
+- **Integration tests**: real end-to-end test against an actual S3 bucket — create bucket, generate presigned URL, upload via HTTP PUT (requests), verify object exists, clean up.
+- **CI**: unit tests run on every push/PR; integration tests are gated (manual) and run only when triggered to avoid accidental charges and resource creation.
+
+---
+
+## Files you should have (drop these into the repo root)
+- `scripts/generate_presigned_put.py` — server-side generator script (Python).
+- `scripts/upload_with_presigned.py` — client upload script (Python).
+- `tests/test_presign_unit.py` — unit test (mocks boto3).
+- `tests/integration_test_presign.py` — integration test (real S3) — gated.
+- `.github/workflows/ci-presign-test.yml` — CI configuration.
+- `iam-setup-template.md` — template for recording policy ARNs, profiles, and test outputs (see separate file).
+- `test.txt` — sample local file to run manual upload (create a small file yourself).
+
+---
+
+## How to run things locally (step-by-step, bash)
+
+> Note: Replace placeholders with your values (`<BUCKET>`, `<PROFILE>`, `<REGION>`). Your repo root is the current directory.
+
+### 0. Setup (one-time)
+```bash
+# create a venv and install deps
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
