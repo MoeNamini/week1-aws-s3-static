@@ -563,3 +563,5 @@ The rest of the process is in another repo - infra -
 After week 2 all repos will be restructured into one repo with clear structure
 
 *** This is in the test phase now ***
+
+Starting AWS Cloud Certfied Practitioner certificate 
